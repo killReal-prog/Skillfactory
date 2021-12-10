@@ -1,0 +1,221 @@
+--Задание 4.1
+
+SELECT city,
+       count(city)
+FROM dst_project.airports
+GROUP BY city
+ORDER BY 2 DESC
+
+
+--Задание 4.2(1)
+
+SELECT count(DISTINCT status)
+FROM dst_project.flights
+
+--Задание 4.2(2)
+
+SELECT count(*)
+FROM dst_project.flights
+WHERE status='Departed'
+
+--Задание 4.2(3)
+
+SELECT count(*)
+FROM dst_project.seats
+WHERE aircraft_code='773'
+
+--Задание 4.2(4)
+
+SELECT count(*)
+FROM dst_project.flights
+WHERE actual_arrival BETWEEN '2017-04-01' AND '2017-09-01'
+  AND status='Arrived'
+
+--Задание 4.3(1)
+
+SELECT count(*)
+FROM dst_project.flights
+WHERE status='Cancelled' 
+
+--Задание 4.3(2)
+
+  SELECT 'Airbus',
+         count(model)
+  FROM dst_project.aircrafts WHERE model like 'Airbus%'
+UNION ALL
+SELECT 'Boeing',
+       count(model)
+FROM dst_project.aircrafts
+WHERE model like 'Boeing%'
+UNION ALL
+SELECT 'Sukhoi Superjet',
+       count(model)
+FROM dst_project.aircrafts
+WHERE model like 'Sukhoi Superjet%' 
+
+--Задание 4.3(3)
+
+  SELECT timezone,
+         count(*)
+  FROM dst_project.airports
+GROUP BY timezone
+ORDER BY 2 DESC 
+
+--Задание 4.3(4)
+
+SELECT flight_id,
+       actual_arrival-scheduled_arrival delay
+FROM dst_project.Flights
+WHERE actual_arrival IS NOT NULL
+ORDER BY delay DESC
+
+--Задание 4.4(1)
+
+SELECT scheduled_departure
+FROM dst_project.flights
+ORDER BY 1
+LIMIT 1
+
+--Задание 4.4(2)
+
+SELECT date_part('hour', scheduled_arrival-scheduled_departure)*60 + date_part('minute', scheduled_arrival-scheduled_departure) t
+FROM dst_project.flights
+ORDER BY t DESC
+LIMIT 1
+
+
+--Задание 4.4(3)
+
+SELECT flight_id,
+       departure_airport,
+       arrival_airport,
+       scheduled_arrival-scheduled_departure
+FROM dst_project.flights
+ORDER BY scheduled_arrival-scheduled_departure DESC
+
+--Задание 4.4(4)
+
+SELECT floor(avg(date_part('hour', scheduled_arrival-scheduled_departure)*60 + date_part('minute', scheduled_arrival-scheduled_departure)))
+FROM dst_project.flights
+
+--Задание 4.5(3)
+
+SELECT boarding_passes.seat_no
+FROM dst_project.tickets
+JOIN dst_project.ticket_flights ON tickets.ticket_no = ticket_flights.ticket_no
+JOIN dst_project.boarding_passes ON ticket_flights.ticket_no = boarding_passes.ticket_no
+WHERE tickets.passenger_id = '4313 788533' --
+
+Задание 4.5(1)
+
+  SELECT fare_conditions,
+         count(*)
+  FROM dst_project.seats WHERE aircraft_code='SU9'
+GROUP BY 1 
+
+--Задание 4.5(2)
+
+SELECT total_amount
+FROM dst_project.bookings
+ORDER BY total_amount
+LIMIT 1
+
+
+--Задание 5.1(1)
+
+SELECT count(*)
+FROM dst_project.flights
+JOIN dst_project.airports ON flights.arrival_airport = airports.airport_code
+WHERE city = 'Anapa'
+  AND status = 'Arrived'
+  AND date_part('year', actual_arrival)=2017
+
+--Задание 5.1(2)
+
+SELECT count(*)
+FROM dst_project.flights
+JOIN dst_project.airports ON flights.departure_airport = airports.airport_code
+WHERE city = 'Anapa'
+  AND (status = 'Arrived'
+       OR status='Departure')
+  AND date_part('year', actual_arrival)=2017
+  AND date_part('month', actual_arrival) in (12,
+                                             1,
+                                             2)
+
+--Задание 5.1(3)
+
+SELECT count(*)
+FROM dst_project.flights
+JOIN dst_project.airports ON flights.departure_airport = airports.airport_code
+WHERE city = 'Anapa'
+  AND status = 'Cancelled'
+
+--Задание 5.1(4)
+
+SELECT count(*)
+FROM dst_project.flights f
+JOIN dst_project.airports a ON f.departure_airport = a.airport_code
+JOIN dst_project.airports aa ON f.arrival_airport = aa.airport_code
+WHERE a.city = 'Anapa'
+  AND NOT aa.city='Moscow'
+
+--Задание 5.1(5)
+
+SELECT aircrafts.model,
+       count(*)
+FROM dst_project.aircrafts
+JOIN dst_project.seats ON aircrafts.aircraft_code = seats.aircraft_code
+WHERE aircrafts.model in
+    (SELECT DISTINCT aircrafts.model
+     FROM dst_project.flights f
+     JOIN dst_project.airports a ON f.departure_airport = a.airport_code
+     JOIN dst_project.airports aa ON f.arrival_airport = aa.airport_code
+     JOIN dst_project.aircrafts ON aircrafts.aircraft_code = f.aircraft_code
+     JOIN dst_project.seats ON aircrafts.aircraft_code = seats.aircraft_code
+     WHERE a.city = 'Anapa')
+GROUP BY 1
+
+
+--Итоговое задание
+
+SELECT tf.flight_id,
+       sum(amount) Выручка_от_билетов,
+                          a.city Город_отправления,
+                                      aa.city Город_назначения,
+                                                   aircrafts.model,
+                                                   scheduled_arrival-scheduled_departure Длительность_полета,
+                                                                                                     (CASE
+                                                                                                          WHEN aa.city = 'Moscow' THEN 1207
+                                                                                                          WHEN aa.city = 'Belgorod' THEN 577
+                                                                                                      END) AS Расстояние, count(ticket_no) Мест_занято,
+                                                                                                                                               (CASE
+                                                                                                                                                    WHEN model = 'Sukhoi Superjet-100' THEN
+                                                                                                                                                           (SELECT count(seat_no)
+                                                                                                                                                            FROM dst_project.seats
+                                                                                                                                                            JOIN dst_project.aircrafts ON seats.aircraft_code = aircrafts.aircraft_code
+                                                                                                                                                            WHERE model = 'Sukhoi Superjet-100'
+                                                                                                                                                            GROUP BY aircrafts.aircraft_code)
+                                                                                                                                                    WHEN model = 'Boeing 737-300' THEN
+                                                                                                                                                           (SELECT count(seat_no)
+                                                                                                                                                            FROM dst_project.seats
+                                                                                                                                                            JOIN dst_project.aircrafts ON seats.aircraft_code = aircrafts.aircraft_code
+                                                                                                                                                            WHERE model = 'Boeing 737-300'
+                                                                                                                                                            GROUP BY aircrafts.aircraft_code)
+                                                                                                                                                END) AS Мест_всего
+FROM dst_project.flights f
+JOIN dst_project.ticket_flights tf ON f.flight_id = tf.flight_id
+JOIN dst_project.airports a ON f.departure_airport = a.airport_code
+JOIN dst_project.airports aa ON f.arrival_airport = aa.airport_code
+JOIN dst_project.aircrafts ON f.aircraft_code = aircrafts.aircraft_code
+WHERE departure_airport = 'AAQ'
+  AND (date_trunc('month', scheduled_departure) in ('2017-01-01',
+                                                    '2017-02-01',
+                                                    '2017-12-01'))
+  AND status not in ('Cancelled')
+GROUP BY 1,
+         3,
+         4,
+         5,
+         6
+ORDER BY 2
